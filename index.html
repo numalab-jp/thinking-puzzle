@@ -77,6 +77,18 @@
   footer a{color:var(--deep);}
   .hidden{display:none;}
   .notice{font-size:13.5px; color:var(--warn); margin-top:8px; min-height:1.2em;}
+  .answer-input{width:100%; border:1.5px solid var(--mint); border-radius:10px; padding:10px 12px;
+    font-size:15px; font-family:inherit; resize:vertical; margin-top:6px; background:#fff;}
+  .banks{display:flex; gap:10px; margin-top:10px;}
+  .bank{flex:1; background:#EDF6F2; border:1px solid #D5EAE2; border-radius:10px; padding:10px;}
+  .bank h4{font-size:13px; color:var(--sub); margin-bottom:6px;}
+  .chip{display:inline-block; margin:0 6px 6px 0; border-radius:999px; padding:6px 14px;
+    font-size:14.5px; font-weight:700; background:#fff; border:2px solid var(--mint);
+    color:var(--deep); cursor:pointer;}
+  .chip.sel{background:var(--deep); color:#fff; border-color:var(--deep);}
+  .chip:disabled{opacity:.35; cursor:default;}
+  .movelog{list-style:none; font-size:14px; margin-top:8px;}
+  .movelog li{padding:3px 0; border-bottom:1px dashed #E3E0D5;}
 </style>
 </head>
 <body>
@@ -156,6 +168,29 @@
       <div class="pbody" id="play-body"></div>
       <div class="notice" id="play-notice"></div>
 
+      <div id="bridge-area" class="hidden">
+        <h3>橋ビルダー（選んで組み立てる）</h3>
+        <div class="muted">電灯のある岸の人をタップして選び、「渡る／戻る」で進めます。合計17分以内に全員を向こう岸へ渡らせてください。</div>
+        <div class="banks">
+          <div class="bank"><h4>こちら岸 <span id="bank-here-lamp"></span></h4><div id="bank-here"></div></div>
+          <div class="bank"><h4>向こう岸 <span id="bank-there-lamp"></span></h4><div id="bank-there"></div></div>
+        </div>
+        <div class="score" style="margin-top:8px;">合計 <b id="bridge-elapsed">0</b>分 ／ 残り <b id="bridge-remain">17</b>分</div>
+        <div id="bridge-verdict" style="margin-top:4px;"></div>
+        <div class="row">
+          <button class="btn btn-main" id="btn-move">渡る</button>
+          <button class="btn btn-hint" id="btn-undo">1手戻す</button>
+          <button class="btn btn-hint" id="btn-reset-bridge">最初から</button>
+        </div>
+        <ul class="movelog" id="bridge-log"></ul>
+      </div>
+
+      <div id="input-area">
+        <h3>あなたの答え</h3>
+        <div class="muted">答え合わせの前に、自分の答えを自分の言葉で書いてください。書くまで「答え合わせをする」は押せません（橋の問題は、上のビルダーで組み立てきってもOKです）。</div>
+        <textarea class="answer-input" id="my-answer" rows="3" placeholder="ここに自分の答えを書く"></textarea>
+      </div>
+
       <div id="hint-area"></div>
       <div class="row">
         <button class="btn btn-hint" id="btn-hint">ヒントを見る</button>
@@ -163,7 +198,10 @@
       </div>
 
       <div id="answer-area" class="hidden">
-        <h3>解答</h3>
+        <h3>答え合わせ</h3>
+        <div class="muted">あなたの答え</div>
+        <div class="answerbox" id="my-answer-view" style="background:#EDF6F2; border-color:#BFE3CE;"></div>
+        <div class="muted" style="margin-top:10px;">模範解答</div>
         <div class="answerbox" id="play-answer"></div>
         <div class="row">
           <button class="btn btn-main" id="btn-solved">自力で解けた</button>
@@ -369,7 +407,12 @@ function startPlay(problem, isDaily){
   $("#answer-area").classList.add("hidden");
   $("#result-area").classList.add("hidden");
   $("#btn-hint").disabled = false;
-  $("#btn-check").disabled = false;
+  $("#my-answer").value = "";
+  $("#btn-check").disabled = true;
+  const isBridge = problem.id === "bridge";
+  $("#bridge-area").classList.toggle("hidden", !isBridge);
+  play.bridge = isBridge ? bridgeNew() : null;
+  if(isBridge) renderBridge();
   $("#timer").textContent = "00:00";
   clearInterval(timerId);
   timerId = setInterval(() => {
@@ -403,10 +446,109 @@ $("#btn-hint").addEventListener("click", () => {
 $("#btn-check").addEventListener("click", () => {
   if(!play || play.checked) return;
   play.checked = true;
+  const txt = $("#my-answer").value.trim();
+  play.myAnswer = txt || (play.bridge ? bridgeSummary() : "");
+  $("#my-answer-view").textContent = play.myAnswer || "（未記入）";
   $("#play-answer").textContent = play.problem.answer;
   $("#answer-area").classList.remove("hidden");
   $("#btn-hint").disabled = true;
   $("#btn-check").disabled = true;
+});
+
+/* ---------- A方式：自分の答えを書くまで答え合わせ不可 ---------- */
+function updateCheckBtn(){
+  if(!play || play.checked) return;
+  const hasText = $("#my-answer").value.trim().length > 0;
+  const b = play.bridge;
+  const bridgeDone = !!b && (b.there.length === 4 || b.elapsed > 17);
+  $("#btn-check").disabled = !(hasText || bridgeDone);
+}
+$("#my-answer").addEventListener("input", updateCheckBtn);
+
+/* ---------- B方式：橋ビルダー（選んで自動判定） ---------- */
+function bridgeNew(){
+  return { here:[1,2,5,10], there:[], lantern:"here", elapsed:0, log:[], sel:[], hist:[] };
+}
+function bridgeSummary(){
+  const b = play.bridge;
+  if(!b || !b.log.length) return "";
+  return "（橋ビルダーで組み立て）\n"+b.log.join("\n")+"\n合計 "+b.elapsed+"分";
+}
+function toggleSel(t){
+  const b = play.bridge; if(!b) return;
+  const maxSel = b.lantern === "here" ? 2 : 1;
+  const i = b.sel.indexOf(t);
+  if(i >= 0) b.sel.splice(i,1);
+  else { if(b.sel.length >= maxSel) b.sel.shift(); b.sel.push(t); }
+  renderBridge();
+}
+function doMove(){
+  const b = play.bridge; if(!b || !b.sel.length) return;
+  b.hist.push(JSON.stringify({here:b.here, there:b.there, lantern:b.lantern, elapsed:b.elapsed, log:b.log}));
+  const cost = Math.max.apply(null, b.sel);
+  const names = b.sel.slice().sort((x,y) => x-y).join("分と")+"分";
+  if(b.lantern === "here"){
+    b.here = b.here.filter(t => !b.sel.includes(t));
+    b.there = b.there.concat(b.sel).sort((x,y) => x-y);
+    b.log.push(names+"が渡る → "+cost+"分（合計"+(b.elapsed+cost)+"分）");
+    b.lantern = "there";
+  } else {
+    b.there = b.there.filter(t => !b.sel.includes(t));
+    b.here = b.here.concat(b.sel).sort((x,y) => x-y);
+    b.log.push(names+"が戻る → "+cost+"分（合計"+(b.elapsed+cost)+"分）");
+    b.lantern = "here";
+  }
+  b.elapsed += cost; b.sel = [];
+  renderBridge(); updateCheckBtn();
+}
+function doUndo(){
+  const b = play.bridge; if(!b) return;
+  const prev = b.hist.pop(); if(!prev) return;
+  Object.assign(b, JSON.parse(prev)); b.sel = [];
+  renderBridge(); updateCheckBtn();
+}
+function renderBridge(){
+  const b = play.bridge; if(!b) return;
+  const mk = (t, side) => {
+    const btn = document.createElement("button");
+    btn.className = "chip" + (b.sel.includes(t) ? " sel" : "");
+    btn.textContent = t+"分";
+    btn.disabled = !(b.lantern === side) || b.there.length === 4;
+    btn.onclick = () => toggleSel(t);
+    return btn;
+  };
+  const H = $("#bank-here"), T = $("#bank-there");
+  H.innerHTML = ""; T.innerHTML = "";
+  b.here.forEach(t => H.appendChild(mk(t, "here")));
+  b.there.forEach(t => T.appendChild(mk(t, "there")));
+  if(!b.here.length) H.innerHTML = '<span class="muted">全員渡りました</span>';
+  if(!b.there.length) T.innerHTML = '<span class="muted">まだ誰もいません</span>';
+  $("#bank-here-lamp").textContent = b.lantern === "here" ? "🔦 電灯はこちら" : "";
+  $("#bank-there-lamp").textContent = b.lantern === "there" ? "🔦 電灯はこちら" : "";
+  $("#bridge-elapsed").textContent = b.elapsed;
+  $("#bridge-remain").textContent = Math.max(0, 17-b.elapsed);
+  $("#btn-move").textContent = b.lantern === "here" ? "渡る" : "戻る";
+  $("#btn-move").disabled = !b.sel.length || b.there.length === 4;
+  $("#btn-undo").disabled = !b.hist.length;
+  const v = $("#bridge-verdict");
+  if(b.there.length === 4 && b.elapsed <= 17)
+    v.innerHTML = '<span class="badge badge-ok">🎉 17分以内に全員渡れました！（合計'+b.elapsed+'分）</span>';
+  else if(b.elapsed > 17)
+    v.innerHTML = '<span class="badge badge-ng">合計が17分を超えました。この組み立てでは条件を満たせません</span>';
+  else v.innerHTML = "";
+  const log = $("#bridge-log"); log.innerHTML = "";
+  b.log.forEach((line, i) => {
+    const li = document.createElement("li");
+    li.textContent = (i+1)+". "+line;
+    log.appendChild(li);
+  });
+}
+$("#btn-move").addEventListener("click", doMove);
+$("#btn-undo").addEventListener("click", doUndo);
+$("#btn-reset-bridge").addEventListener("click", () => {
+  if(!play) return;
+  play.bridge = bridgeNew();
+  renderBridge(); updateCheckBtn();
 });
 
 function hintBonus(h){ return h === 0 ? 50 : (h === 1 ? 25 : 0); }
@@ -425,7 +567,7 @@ function finish(solved){
     const k = dateKey(new Date());
     if(!state.results[k]){
       state.results[k] = { problemId: play.problem.id, solved, hints: play.hints,
-        seconds: sec, practice: play.practice, score };
+        seconds: sec, practice: play.practice, score, myAnswer: play.myAnswer || "" };
       saveState(state);
       if(solved && !play.practice){ countAPI("hit", "solves").catch(() => {}); }
     }
@@ -445,6 +587,12 @@ function finish(solved){
   } else {
     rb.innerHTML = '<div class="score">今回は0点です。考えた過程が財産です。明日また挑戦しましょう。</div>'+
       '<div class="muted">かかった時間 '+fmtTime(sec)+'／ヒント '+play.hints+'回</div>';
+  }
+  if(play.bridge && play.bridge.log.length){
+    const b = play.bridge;
+    rb.innerHTML += '<div class="muted">橋ビルダー：'+(b.there.length === 4
+      ? ("合計"+b.elapsed+"分で全員渡れた"+(b.elapsed <= 17 ? "（条件クリア）" : "（17分オーバー）"))
+      : ("合計"+b.elapsed+"分まで組み立て"))+'</div>';
   }
   $("#result-area").classList.remove("hidden");
   window.scrollTo(0, document.body.scrollHeight);
