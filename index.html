@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>思考力パズル｜AIに奪われた思考力を取り戻す</title>
+<meta name="description" content="AIに頼りすぎて鈍った頭を、論理パズルで鍛え直す。毎日1問、段階ヒントつき。">
+<style>
+  :root{
+    --deep:#103A38; --mint:#78C8B4; --light:#96DCC8; --paper:#F7F5EF;
+    --ink:#22312E; --sub:#5A6B66; --warn:#C0392B; --gold:#C9A227;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans CJK JP",sans-serif;
+    background:var(--paper); color:var(--ink); line-height:1.7; -webkit-text-size-adjust:100%;}
+  .wrap{max-width:640px; margin:0 auto; padding:0 16px 48px;}
+  header{background:var(--deep); color:#fff; padding:22px 16px 18px; margin-bottom:18px;}
+  header .inner{max-width:640px; margin:0 auto;}
+  header .series{color:var(--light); font-size:13px; letter-spacing:.08em;}
+  header h1{font-size:26px; margin:2px 0 4px;}
+  header .tag{font-size:13px; color:#D8EDE6;}
+  .streak{display:inline-block; margin-top:10px; background:rgba(255,255,255,.12);
+    border:1px solid var(--mint); color:#fff; border-radius:999px; padding:3px 14px; font-size:14px;}
+  .card{background:#fff; border:1px solid #E3E0D5; border-radius:14px; padding:18px; margin-bottom:16px;
+    box-shadow:0 1px 3px rgba(16,58,56,.06);}
+  .card h2{font-size:17px; color:var(--deep); margin-bottom:8px;}
+  .card h3{font-size:15px; color:var(--deep); margin:12px 0 4px;}
+  .date{font-size:13px; color:var(--sub);}
+  .ptitle{font-size:22px; font-weight:700; color:var(--deep); margin:2px 0 6px;}
+  .pbody{white-space:pre-wrap; font-size:15.5px;}
+  .pimg{width:100%; border-radius:10px; margin:10px 0 4px; border:1px solid #E3E0D5;}
+  .btn{display:inline-block; border:none; cursor:pointer; border-radius:999px;
+    padding:11px 22px; font-size:15px; font-weight:700; text-decoration:none;}
+  .btn-main{background:var(--deep); color:#fff;}
+  .btn-main:active{background:#0B2B29;}
+  .btn-sub{background:#fff; color:var(--deep); border:2px solid var(--deep);}
+  .btn-hint{background:#EDF6F2; color:var(--deep); border:1px solid var(--mint);}
+  .btn:disabled{opacity:.45; cursor:default;}
+  .row{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;}
+  .timer{font-size:30px; font-weight:700; color:var(--deep); font-variant-numeric:tabular-nums;}
+  .timer small{font-size:13px; color:var(--sub); font-weight:400;}
+  .badge{display:inline-block; border-radius:999px; padding:2px 12px; font-size:12.5px; font-weight:700;}
+  .badge-ok{background:#E5F4EC; color:#1E7A46;}
+  .badge-ng{background:#FDECEA; color:var(--warn);}
+  .badge-practice{background:#FFF3D6; color:#8A6D00;}
+  .hintbox{background:#EDF6F2; border-left:4px solid var(--mint); border-radius:8px;
+    padding:10px 14px; margin-top:10px; font-size:15px; white-space:pre-wrap;}
+  .answerbox{background:#FBF7EA; border:1px solid #E8DCB0; border-radius:10px;
+    padding:12px 14px; margin-top:10px; font-size:15px; white-space:pre-wrap;}
+  .score{font-size:15px;}
+  .score b{color:var(--deep);}
+  .bigscore{font-size:34px; font-weight:800; color:var(--deep);}
+  .league-points{font-size:26px; font-weight:800; color:var(--deep);}
+  .bar{height:12px; background:#E9E6DA; border-radius:999px; overflow:hidden; margin:8px 0 4px;}
+  .bar > div{height:100%; background:linear-gradient(90deg,var(--mint),var(--deep)); width:0%;}
+  .muted{font-size:13px; color:var(--sub);}
+  .hist{list-style:none;}
+  .hist li{padding:8px 0; border-bottom:1px dashed #E3E0D5; font-size:14.5px;
+    display:flex; justify-content:space-between; gap:10px;}
+  .hist li:last-child{border-bottom:none;}
+  .prob-list{list-style:none;}
+  .prob-list li{display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding:9px 0; border-bottom:1px dashed #E3E0D5;}
+  .prob-list li:last-child{border-bottom:none;}
+  .rules{font-size:14px;}
+  .rules li{margin-left:18px; margin-bottom:3px;}
+  footer{font-size:13px; color:var(--sub); text-align:center; margin-top:8px;}
+  footer a{color:var(--deep);}
+  .hidden{display:none;}
+  .notice{font-size:13.5px; color:var(--warn); margin-top:8px; min-height:1.2em;}
+</style>
+</head>
+<body>
+<header>
+  <div class="inner">
+    <div class="series">AIに奪われた思考力を取り戻す</div>
+    <h1>思考力パズル</h1>
+    <div class="tag">毎日1問。まず自分の頭で考える。ヒントは段階制、答えを見るのは最後。</div>
+    <div class="streak" id="streak">🔥 0日連続</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ホーム -->
+  <div id="view-home">
+    <div class="card">
+      <div class="date" id="today-date"></div>
+      <h2>今日の問題</h2>
+      <div class="ptitle" id="today-title"></div>
+      <div id="today-status"></div>
+      <div class="row">
+        <button class="btn btn-main" id="btn-start">挑戦をはじめる</button>
+      </div>
+      <div class="muted" style="margin-top:10px;">本番は1日1回だけ。コピーしたり、別のタブやアプリに切り替えると、その日の挑戦は「練習扱い」になり、リーグの点数には入りません。</div>
+    </div>
+
+    <div class="card">
+      <h2>今週のリーグ</h2>
+      <div><span class="league-points" id="league-points">0</span> <span class="muted">点</span>
+        <span class="badge badge-ok" id="league-tier">ブロンズ</span></div>
+      <div class="bar"><div id="league-bar"></div></div>
+      <div class="muted" id="league-next"></div>
+      <h3>点数の仕組み</h3>
+      <ul class="rules">
+        <li>正解で基本 <b>100点</b></li>
+        <li>ヒントなし正解 <b>＋50点</b>／ヒント1使用 <b>＋25点</b>／ヒント2使用 <b>＋0点</b></li>
+        <li>時間ボーナス：3分以内 <b>＋20点</b>、5分以内 ＋15点、10分以内 ＋10点、15分以内 ＋5点</li>
+        <li>週間リーグ：300点でシルバー、600点でゴールド、900点でプラチナに昇格</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>ほかの問題で練習する</h2>
+      <div class="muted">練習モードでは点数は付きません。昨日の問題の復習や、先取りにどうぞ。</div>
+      <ul class="prob-list" id="prob-list"></ul>
+    </div>
+
+    <div class="card">
+      <h2>最近の記録</h2>
+      <ul class="hist" id="hist"><li class="muted">まだ記録がありません</li></ul>
+    </div>
+  </div>
+
+  <!-- 挑戦 -->
+  <div id="view-play" class="hidden">
+    <div class="card">
+      <div class="row" style="justify-content:space-between; align-items:center; margin-top:0;">
+        <span class="badge badge-ok" id="play-mode">本番</span>
+        <span class="timer"><span id="timer">00:00</span> <small>経過</small></span>
+      </div>
+      <div class="ptitle" id="play-title" style="margin-top:8px;"></div>
+      <img class="pimg hidden" id="play-img" alt="問題の図">
+      <div class="pbody" id="play-body"></div>
+      <div class="notice" id="play-notice"></div>
+
+      <div id="hint-area"></div>
+      <div class="row">
+        <button class="btn btn-hint" id="btn-hint">ヒントを見る</button>
+        <button class="btn btn-sub" id="btn-check">答え合わせをする</button>
+      </div>
+
+      <div id="answer-area" class="hidden">
+        <h3>解答</h3>
+        <div class="answerbox" id="play-answer"></div>
+        <div class="row">
+          <button class="btn btn-main" id="btn-solved">自力で解けた</button>
+          <button class="btn btn-sub" id="btn-failed">解けなかった</button>
+        </div>
+        <div class="muted" style="margin-top:8px;">正直に申告してください。そこがこのゲームのルールです。</div>
+      </div>
+
+      <div id="result-area" class="hidden">
+        <h3>結果</h3>
+        <div id="result-body"></div>
+        <div class="row">
+          <button class="btn btn-main" id="btn-home">ホームへ戻る</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    文・出題：<a href="https://note.com/numalab" target="_blank" rel="noopener">沼ラボ</a>／
+    記事シリーズ：<a href="https://note.com/numalab/m/m8c8d71ddd20d" target="_blank" rel="noopener">『AIに奪われた思考力を取り戻す』</a><br>
+    記録はこの端末の中だけに保存されます。
+  </footer>
+</div>
+
+<script src="problems.js"></script>
+<script>
+"use strict";
+const KEY = "thinking-puzzle-v1";
+const $ = (s) => document.querySelector(s);
+
+function loadState(){
+  try{ const s = JSON.parse(localStorage.getItem(KEY)); if(s && s.results) return s; }catch(e){}
+  return { results: {} };
+}
+function saveState(s){ localStorage.setItem(KEY, JSON.stringify(s)); }
+function pad(n){ return String(n).padStart(2,"0"); }
+function dateKey(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function hashStr(s){ let h=0; for(let i=0;i<s.length;i++){ h=((h*31)+s.charCodeAt(i))|0; } return Math.abs(h); }
+function dailyProblem(){ return PROBLEMS[hashStr(dateKey(new Date())) % PROBLEMS.length]; }
+function weekStart(d){
+  const x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const dow = (x.getDay()+6)%7; // Monday = 0
+  x.setDate(x.getDate()-dow);
+  return x;
+}
+function fmtTime(sec){ return pad(Math.floor(sec/60))+":"+pad(sec%60); }
+
+function streakDays(state){
+  let n = 0; const d = new Date();
+  if(!state.results[dateKey(d)]) d.setDate(d.getDate()-1); // 今日が未挑戦なら昨日までで数える
+  while(state.results[dateKey(d)]){ n++; d.setDate(d.getDate()-1); }
+  return n;
+}
+function weekPoints(state){
+  const ws = weekStart(new Date()); let total = 0;
+  for(const k of Object.keys(state.results)){
+    const r = state.results[k];
+    const d = new Date(k+"T00:00:00");
+    if(d >= ws && !r.practice) total += r.score||0;
+  }
+  return total;
+}
+const TIERS = [
+  {name:"ブロンズ", min:0}, {name:"シルバー", min:300},
+  {name:"ゴールド", min:600}, {name:"プラチナ", min:900}
+];
+function tierOf(pts){
+  let cur = TIERS[0], next = null;
+  for(let i=0;i<TIERS.length;i++){
+    if(pts >= TIERS[i].min){ cur = TIERS[i]; next = TIERS[i+1]||null; }
+  }
+  return {cur, next};
+}
+
+/* ---------- ホーム描画 ---------- */
+function renderHome(){
+  const state = loadState();
+  const today = new Date();
+  $("#today-date").textContent = today.getFullYear()+"年"+(today.getMonth()+1)+"月"+today.getDate()+"日";
+  $("#streak").textContent = "🔥 "+streakDays(state)+"日連続";
+  const p = dailyProblem();
+  $("#today-title").textContent = "「"+p.title+"」";
+  const r = state.results[dateKey(today)];
+  const status = $("#today-status"), btn = $("#btn-start");
+  if(r){
+    status.innerHTML = r.solved
+      ? '<span class="badge badge-ok">挑戦済み</span> '+(r.practice
+          ? '<span class="badge badge-practice">練習扱い</span>'
+          : '<span class="score">スコア <b>'+r.score+'点</b>（ヒント'+r.hints+'回・'+fmtTime(r.seconds)+'）</span>')
+      : '<span class="badge badge-ng">挑戦済み（未正解）</span> <span class="muted">明日また挑戦しましょう</span>';
+    btn.textContent = "同じ問題を練習する";
+  } else {
+    status.innerHTML = '<span class="muted">まだ挑戦していません</span>';
+    btn.textContent = "挑戦をはじめる";
+  }
+  btn.onclick = () => startPlay(p, !r);
+
+  const pts = weekPoints(state);
+  $("#league-points").textContent = pts;
+  const t = tierOf(pts);
+  $("#league-tier").textContent = t.cur.name;
+  if(t.next){
+    const span = t.next.min - t.cur.min, done = pts - t.cur.min;
+    $("#league-bar").style.width = Math.min(100, Math.round(done/span*100))+"%";
+    $("#league-next").textContent = "次の"+t.next.name+"まで あと"+(t.next.min-pts)+"点";
+  } else {
+    $("#league-bar").style.width = "100%";
+    $("#league-next").textContent = "最高ティアに到達しています。今週この調子で維持しましょう。";
+  }
+
+  const list = $("#prob-list"); list.innerHTML = "";
+  for(const q of PROBLEMS){
+    const li = document.createElement("li");
+    li.innerHTML = "<span>「"+q.title+"」</span>";
+    const b = document.createElement("button");
+    b.className = "btn btn-hint"; b.textContent = "練習する";
+    b.onclick = () => startPlay(q, false);
+    li.appendChild(b); list.appendChild(li);
+  }
+
+  const hist = $("#hist"); hist.innerHTML = "";
+  const keys = Object.keys(state.results).sort().reverse().slice(0,14);
+  if(!keys.length){ hist.innerHTML = '<li class="muted">まだ記録がありません</li>'; }
+  for(const k of keys){
+    const rr = state.results[k];
+    const prob = PROBLEMS.find(x => x.id === rr.problemId);
+    const li = document.createElement("li");
+    li.innerHTML = "<span>"+k+" 「"+(prob?prob.title:rr.problemId)+"」</span><span>"+
+      (rr.solved ? (rr.practice ? "練習扱い" : "<b>"+rr.score+"点</b>") : "未正解")+"</span>";
+    hist.appendChild(li);
+  }
+}
+
+/* ---------- 挑戦 ---------- */
+let play = null, timerId = null;
+
+function startPlay(problem, isDaily){
+  play = { problem, isDaily, hints:0, start:Date.now(), practice:false, finished:false, checked:false };
+  $("#view-home").classList.add("hidden");
+  $("#view-play").classList.remove("hidden");
+  $("#play-mode").textContent = isDaily ? "本番（今日の問題）" : "練習モード";
+  $("#play-mode").className = "badge " + (isDaily ? "badge-ok" : "badge-practice");
+  $("#play-title").textContent = "「"+problem.title+"」";
+  $("#play-body").textContent = problem.body;
+  const img = $("#play-img");
+  if(problem.image){ img.src = problem.image; img.classList.remove("hidden"); }
+  else { img.classList.add("hidden"); img.removeAttribute("src"); }
+  $("#hint-area").innerHTML = "";
+  $("#play-notice").textContent = "";
+  $("#answer-area").classList.add("hidden");
+  $("#result-area").classList.add("hidden");
+  $("#btn-hint").disabled = false;
+  $("#btn-check").disabled = false;
+  $("#timer").textContent = "00:00";
+  clearInterval(timerId);
+  timerId = setInterval(() => {
+    if(play && !play.finished) $("#timer").textContent = fmtTime(Math.floor((Date.now()-play.start)/1000));
+  }, 500);
+  window.scrollTo(0,0);
+}
+
+function flagPractice(reason){
+  if(!play || !play.isDaily || play.finished || play.practice) return;
+  play.practice = true;
+  $("#play-mode").textContent = "練習扱い";
+  $("#play-mode").className = "badge badge-practice";
+  $("#play-notice").textContent = reason+"のため、この挑戦は練習扱いになりました（リーグの点数には入りません）。問題はそのまま続けられます。";
+}
+document.addEventListener("copy", () => flagPractice("コピーが検出された"));
+document.addEventListener("visibilitychange", () => {
+  if(document.hidden) flagPractice("別のタブやアプリへの切り替えが検出された");
+});
+
+$("#btn-hint").addEventListener("click", () => {
+  if(!play || play.checked || play.hints >= 2) return;
+  play.hints++;
+  const box = document.createElement("div");
+  box.className = "hintbox";
+  box.textContent = "ヒント"+play.hints+"： "+(play.hints === 1 ? play.problem.hint1 : play.problem.hint2);
+  $("#hint-area").appendChild(box);
+  if(play.hints >= 2) $("#btn-hint").disabled = true;
+});
+
+$("#btn-check").addEventListener("click", () => {
+  if(!play || play.checked) return;
+  play.checked = true;
+  $("#play-answer").textContent = play.problem.answer;
+  $("#answer-area").classList.remove("hidden");
+  $("#btn-hint").disabled = true;
+  $("#btn-check").disabled = true;
+});
+
+function hintBonus(h){ return h === 0 ? 50 : (h === 1 ? 25 : 0); }
+function timeBonus(sec){ return sec <= 180 ? 20 : (sec <= 300 ? 15 : (sec <= 600 ? 10 : (sec <= 900 ? 5 : 0))); }
+
+function finish(solved){
+  if(!play || play.finished) return;
+  play.finished = true;
+  clearInterval(timerId);
+  const sec = Math.floor((Date.now()-play.start)/1000);
+  const hb = hintBonus(play.hints), tb = timeBonus(sec);
+  const score = (solved && play.isDaily && !play.practice) ? 100 + hb + tb : 0;
+
+  if(play.isDaily){
+    const state = loadState();
+    const k = dateKey(new Date());
+    if(!state.results[k]){
+      state.results[k] = { problemId: play.problem.id, solved, hints: play.hints,
+        seconds: sec, practice: play.practice, score };
+      saveState(state);
+    }
+  }
+  $("#answer-area").classList.add("hidden");
+  const rb = $("#result-body");
+  if(!play.isDaily){
+    rb.innerHTML = '<div class="score">練習モードのため点数は付きません。</div>'+
+      '<div class="muted">かかった時間 '+fmtTime(sec)+'／ヒント '+play.hints+'回</div>';
+  } else if(play.practice){
+    rb.innerHTML = '<div class="score">練習扱いのため、リーグの点数には入りません。</div>'+
+      '<div class="muted">かかった時間 '+fmtTime(sec)+'／ヒント '+play.hints+'回</div>';
+  } else if(solved){
+    rb.innerHTML = '<div class="bigscore">'+score+'点</div>'+
+      '<div class="score">基本 100 ＋ ヒントボーナス '+hb+' ＋ 時間ボーナス '+tb+'</div>'+
+      '<div class="muted">かかった時間 '+fmtTime(sec)+'／ヒント '+play.hints+'回</div>';
+  } else {
+    rb.innerHTML = '<div class="score">今回は0点です。考えた過程が財産です。明日また挑戦しましょう。</div>'+
+      '<div class="muted">かかった時間 '+fmtTime(sec)+'／ヒント '+play.hints+'回</div>';
+  }
+  $("#result-area").classList.remove("hidden");
+  window.scrollTo(0, document.body.scrollHeight);
+}
+$("#btn-solved").addEventListener("click", () => finish(true));
+$("#btn-failed").addEventListener("click", () => finish(false));
+$("#btn-home").addEventListener("click", () => {
+  $("#view-play").classList.add("hidden");
+  $("#view-home").classList.remove("hidden");
+  renderHome();
+  window.scrollTo(0,0);
+});
+
+renderHome();
+</script>
+</body>
+</html>
