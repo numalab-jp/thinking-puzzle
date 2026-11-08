@@ -147,13 +147,13 @@
 
     <div class="card">
       <h2>みんなの記録</h2>
-      <div class="stats">
+      <div class="stats" id="stat-grid">
         <div class="stat"><div class="num" id="stat-visits">—</div><div class="lbl">サイトに来た人（のべ）</div></div>
         <div class="stat"><div class="num" id="stat-diag">—</div><div class="lbl">診断を完了した人（のべ）</div></div>
         <div class="stat"><div class="num" id="stat-starts">—</div><div class="lbl">問題に挑戦した人（のべ）</div></div>
         <div class="stat"><div class="num" id="stat-solves">—</div><div class="lbl">自力で解けた申告（のべ）</div></div>
       </div>
-      <div class="bar" style="margin-top:12px;"><div id="stat-ratio"></div></div>
+      <div class="bar" id="stat-barwrap" style="margin-top:12px;"><div id="stat-ratio"></div></div>
       <div class="muted" id="stat-note">みんなの記録を集計しています…</div>
       <div class="muted" style="margin-top:6px;">訪問・診断・挑戦は、それぞれ1日1回まで数えています。個人が特定される情報は集めていません。</div>
     </div>
@@ -317,6 +317,7 @@ function tierOf(pts){
 
 /* ---------- みんなの記録（無料カウンターで集計） ---------- */
 const STATS_NS = "numalab-jp-thinking-puzzle";
+const STATS_SHOW_MIN = 100; /* 参加人数の数字は、来訪（のべ）がこの数に達してから公開する */
 async function countAPI(action, key){
   const r = await fetch("https://abacus.jasoncameron.dev/"+action+"/"+STATS_NS+"/"+key);
   if(!r.ok) throw new Error("stats");
@@ -341,12 +342,18 @@ async function getCount(key){
 }
 function fmtNum(n){ return n === null ? "—" : n.toLocaleString("ja-JP"); }
 async function refreshDiagSocial(){
+  const visits = await getCount("visits");
   const diagN = await getCount("diag");
   const startsN = await getCount("starts");
-  if(diagN === null && startsN === null) return;
   const strip = $("#diag-social");
-  if(strip) strip.textContent = "これまでに "+fmtNum(diagN)+" 人が診断を完了し、"+fmtNum(startsN)+" 人が問題に挑戦しています。";
   const box = $("#diag-result-social");
+  if(visits !== null && visits < STATS_SHOW_MIN){
+    if(strip) strip.textContent = "公開したばかりのシリーズです。最初の挑戦者として参加してみましょう。";
+    if(box) box.textContent = "あなたは最初の挑戦者の1人です。";
+    return;
+  }
+  if(diagN === null && startsN === null) return;
+  if(strip) strip.textContent = "これまでに "+fmtNum(diagN)+" 人が診断を完了し、"+fmtNum(startsN)+" 人が問題に挑戦しています。";
   if(box) box.innerHTML = "あなたもその1人です。これまでに <b>"+fmtNum(diagN)+"</b> 人が診断を完了し、<b>"+fmtNum(startsN)+"</b> 人が問題に挑戦しています。";
 }
 async function loadStats(){
@@ -366,6 +373,13 @@ async function loadStats(){
     diagN = await getCount("diag");
     startsN = await getCount("starts");
     solves = await getCount("solves");
+  }
+  const showNums = (visits === null) || (visits >= STATS_SHOW_MIN);
+  if(!showNums){
+    $("#stat-grid").classList.add("hidden");
+    $("#stat-barwrap").classList.add("hidden");
+    $("#stat-note").textContent = "公開したばかりの新しいシリーズです。最初の挑戦者として、一緒に記録を作っていきましょう（参加人数の表示は、ある程度集まってから開始します）。";
+    return;
   }
   if(visits !== null) $("#stat-visits").textContent = fmtNum(visits);
   if(diagN !== null) $("#stat-diag").textContent = fmtNum(diagN);
