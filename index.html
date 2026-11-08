@@ -51,10 +51,12 @@
   .score b{color:var(--deep);}
   .bigscore{font-size:34px; font-weight:800; color:var(--deep);}
   .league-points{font-size:26px; font-weight:800; color:var(--deep);}
-  .stats{display:flex; gap:12px; margin-top:4px;}
-  .stat{flex:1; background:#EDF6F2; border:1px solid #D5EAE2; border-radius:10px; padding:10px 8px; text-align:center;}
+  .stats{display:flex; gap:12px; margin-top:4px; flex-wrap:wrap;}
+  .stat{flex:1 1 120px; background:#EDF6F2; border:1px solid #D5EAE2; border-radius:10px; padding:10px 8px; text-align:center;}
   .stat .num{font-size:30px; font-weight:800; color:var(--deep); font-variant-numeric:tabular-nums; line-height:1.25;}
   .stat .lbl{font-size:12.5px; color:var(--sub);}
+  .socialbox{background:#EDF6F2; border:1px solid #D5EAE2; border-radius:10px; padding:10px 14px; margin-top:12px; font-size:14.5px;}
+  .socialbox b{color:var(--deep); font-size:17px;}
   .ladder{display:flex; align-items:center; gap:5px; flex-wrap:wrap; margin-top:10px;}
   .rung{border-radius:999px; padding:3px 12px; font-size:13px; font-weight:700; background:#EFEDE3; color:var(--sub); border:1px solid #E3E0D5;}
   .rung.done{background:#E5F4EC; color:#1E7A46; border-color:#BFE3CE;}
@@ -146,12 +148,14 @@
     <div class="card">
       <h2>みんなの記録</h2>
       <div class="stats">
-        <div class="stat"><div class="num" id="stat-visits">—</div><div class="lbl">挑戦した人（のべ）</div></div>
+        <div class="stat"><div class="num" id="stat-visits">—</div><div class="lbl">サイトに来た人（のべ）</div></div>
+        <div class="stat"><div class="num" id="stat-diag">—</div><div class="lbl">診断を完了した人（のべ）</div></div>
+        <div class="stat"><div class="num" id="stat-starts">—</div><div class="lbl">問題に挑戦した人（のべ）</div></div>
         <div class="stat"><div class="num" id="stat-solves">—</div><div class="lbl">自力で解けた申告（のべ）</div></div>
       </div>
       <div class="bar" style="margin-top:12px;"><div id="stat-ratio"></div></div>
       <div class="muted" id="stat-note">みんなの記録を集計しています…</div>
-      <div class="muted" style="margin-top:6px;">訪問は1日1回まで数えています。個人が特定される情報は集めていません。</div>
+      <div class="muted" style="margin-top:6px;">訪問・診断・挑戦は、それぞれ1日1回まで数えています。個人が特定される情報は集めていません。</div>
     </div>
 
     <div class="card">
@@ -174,11 +178,13 @@
       <div id="diag-main">
         <div class="ptitle" id="diag-q" style="font-size:19px;"></div>
         <div id="diag-opts"></div>
+        <div class="muted" id="diag-social" style="margin-top:12px;"></div>
       </div>
       <div id="diag-result" class="hidden">
         <div class="muted">あなたの結果</div>
         <div class="diag-result" id="diag-title"></div>
         <div id="diag-msg"></div>
+        <div class="socialbox" id="diag-result-social"></div>
         <div class="row">
           <button class="btn btn-main" id="btn-diag-play">今日の問題を解いてみる</button>
           <button class="btn btn-sub" id="btn-diag-home">ホームへ戻る</button>
@@ -321,10 +327,32 @@ function statsStore(){
   try{ return JSON.parse(localStorage.getItem("tp-stats")) || {}; }catch(e){ return {}; }
 }
 function setStatsStore(o){ try{ localStorage.setItem("tp-stats", JSON.stringify(o)); }catch(e){} }
+async function hitOncePerDay(key, field){
+  try{
+    const st = statsStore(); const today = dateKey(new Date());
+    if(st[field] !== today){
+      await countAPI("hit", key);
+      st[field] = today; setStatsStore(st);
+    }
+  }catch(e){}
+}
+async function getCount(key){
+  try{ return await countAPI("get", key); }catch(e){ return null; }
+}
+function fmtNum(n){ return n === null ? "—" : n.toLocaleString("ja-JP"); }
+async function refreshDiagSocial(){
+  const diagN = await getCount("diag");
+  const startsN = await getCount("starts");
+  if(diagN === null && startsN === null) return;
+  const strip = $("#diag-social");
+  if(strip) strip.textContent = "これまでに "+fmtNum(diagN)+" 人が診断を完了し、"+fmtNum(startsN)+" 人が問題に挑戦しています。";
+  const box = $("#diag-result-social");
+  if(box) box.innerHTML = "あなたもその1人です。これまでに <b>"+fmtNum(diagN)+"</b> 人が診断を完了し、<b>"+fmtNum(startsN)+"</b> 人が問題に挑戦しています。";
+}
 async function loadStats(){
   const demo = new URLSearchParams(location.search).get("demo");
-  let visits = null, solves = null;
-  if(demo){ visits = 128; solves = 57; }
+  let visits = null, diagN = null, startsN = null, solves = null;
+  if(demo){ visits = 128; diagN = 96; startsN = 71; solves = 57; }
   else{
     try{
       const st = statsStore(); const today = dateKey(new Date());
@@ -335,14 +363,22 @@ async function loadStats(){
         visits = await countAPI("get", "visits");
       }
     }catch(e){}
-    try{ solves = await countAPI("get", "solves"); }catch(e){}
+    diagN = await getCount("diag");
+    startsN = await getCount("starts");
+    solves = await getCount("solves");
   }
-  if(visits !== null) $("#stat-visits").textContent = visits.toLocaleString("ja-JP");
-  if(solves !== null) $("#stat-solves").textContent = solves.toLocaleString("ja-JP");
+  if(visits !== null) $("#stat-visits").textContent = fmtNum(visits);
+  if(diagN !== null) $("#stat-diag").textContent = fmtNum(diagN);
+  if(startsN !== null) $("#stat-starts").textContent = fmtNum(startsN);
+  if(solves !== null) $("#stat-solves").textContent = fmtNum(solves);
   if(visits !== null && solves !== null && visits > 0){
     const pct = Math.min(100, Math.round(solves/visits*100));
     $("#stat-ratio").style.width = pct+"%";
-    $("#stat-note").textContent = "挑戦した人のうち、約"+pct+"%が「自力で解けた」と申告しています（自己申告ベース）。";
+    let note = "サイトに来た人のうち、約"+pct+"%が「自力で解けた」と申告しています（自己申告ベース）。";
+    if(diagN !== null && startsN !== null){
+      note = "来た人 → 診断完了 約"+Math.min(100, Math.round(diagN/visits*100))+"% → 挑戦開始 約"+Math.min(100, Math.round(startsN/visits*100))+"% → 解けた申告 約"+pct+"%（自己申告ベース）。";
+    }
+    $("#stat-note").textContent = note;
   } else if(!demo){
     $("#stat-note").textContent = "集計サービスに接続できませんでした。あなたの記録は通常どおり残ります。";
   }
@@ -364,6 +400,7 @@ function startDiag(){
   $("#diag-main").classList.remove("hidden");
   $("#diag-result").classList.add("hidden");
   renderDiagQ();
+  refreshDiagSocial();
   window.scrollTo(0,0);
 }
 function renderDiagQ(){
@@ -399,6 +436,7 @@ function renderDiagResult(){
   $("#diag-msg").textContent = msg;
   $("#diag-result").classList.remove("hidden");
   window.scrollTo(0,0);
+  hitOncePerDay("diag", "diagDate").then(refreshDiagSocial);
 }
 $("#btn-diag").addEventListener("click", startDiag);
 $("#btn-diag-home").addEventListener("click", () => {
@@ -490,6 +528,7 @@ let play = null, timerId = null;
 
 function startPlay(problem, isDaily){
   play = { problem, isDaily, hints:0, start:Date.now(), practice:false, finished:false, checked:false };
+  if(isDaily) hitOncePerDay("starts", "startDate");
   $("#view-home").classList.add("hidden");
   $("#view-diag").classList.add("hidden");
   $("#view-play").classList.remove("hidden");
