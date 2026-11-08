@@ -51,6 +51,15 @@
   .score b{color:var(--deep);}
   .bigscore{font-size:34px; font-weight:800; color:var(--deep);}
   .league-points{font-size:26px; font-weight:800; color:var(--deep);}
+  .stats{display:flex; gap:12px; margin-top:4px;}
+  .stat{flex:1; background:#EDF6F2; border:1px solid #D5EAE2; border-radius:10px; padding:10px 8px; text-align:center;}
+  .stat .num{font-size:30px; font-weight:800; color:var(--deep); font-variant-numeric:tabular-nums; line-height:1.25;}
+  .stat .lbl{font-size:12.5px; color:var(--sub);}
+  .ladder{display:flex; align-items:center; gap:5px; flex-wrap:wrap; margin-top:10px;}
+  .rung{border-radius:999px; padding:3px 12px; font-size:13px; font-weight:700; background:#EFEDE3; color:var(--sub); border:1px solid #E3E0D5;}
+  .rung.done{background:#E5F4EC; color:#1E7A46; border-color:#BFE3CE;}
+  .rung.cur{background:var(--deep); color:#fff; border-color:var(--deep);}
+  .arrow{color:var(--sub); font-size:12px;}
   .bar{height:12px; background:#E9E6DA; border-radius:999px; overflow:hidden; margin:8px 0 4px;}
   .bar > div{height:100%; background:linear-gradient(90deg,var(--mint),var(--deep)); width:0%;}
   .muted{font-size:13px; color:var(--sub);}
@@ -101,6 +110,8 @@
         <span class="badge badge-ok" id="league-tier">ブロンズ</span></div>
       <div class="bar"><div id="league-bar"></div></div>
       <div class="muted" id="league-next"></div>
+      <div class="ladder" id="league-ladder"></div>
+      <div class="muted" id="league-pos" style="margin-top:6px;"></div>
       <h3>点数の仕組み</h3>
       <ul class="rules">
         <li>正解で基本 <b>100点</b></li>
@@ -108,6 +119,17 @@
         <li>時間ボーナス：3分以内 <b>＋20点</b>、5分以内 ＋15点、10分以内 ＋10点、15分以内 ＋5点</li>
         <li>週間リーグ：300点でシルバー、600点でゴールド、900点でプラチナに昇格</li>
       </ul>
+    </div>
+
+    <div class="card">
+      <h2>みんなの記録</h2>
+      <div class="stats">
+        <div class="stat"><div class="num" id="stat-visits">—</div><div class="lbl">挑戦した人（のべ）</div></div>
+        <div class="stat"><div class="num" id="stat-solves">—</div><div class="lbl">自力で解けた申告（のべ）</div></div>
+      </div>
+      <div class="bar" style="margin-top:12px;"><div id="stat-ratio"></div></div>
+      <div class="muted" id="stat-note">みんなの記録を集計しています…</div>
+      <div class="muted" style="margin-top:6px;">訪問は1日1回まで数えています。個人が特定される情報は集めていません。</div>
     </div>
 
     <div class="card">
@@ -217,6 +239,45 @@ function tierOf(pts){
   return {cur, next};
 }
 
+/* ---------- みんなの記録（無料カウンターで集計） ---------- */
+const STATS_NS = "numalab-jp-thinking-puzzle";
+async function countAPI(action, key){
+  const r = await fetch("https://abacus.jasoncameron.dev/"+action+"/"+STATS_NS+"/"+key);
+  if(!r.ok) throw new Error("stats");
+  const j = await r.json();
+  return (typeof j.value === "number") ? j.value : null;
+}
+function statsStore(){
+  try{ return JSON.parse(localStorage.getItem("tp-stats")) || {}; }catch(e){ return {}; }
+}
+function setStatsStore(o){ try{ localStorage.setItem("tp-stats", JSON.stringify(o)); }catch(e){} }
+async function loadStats(){
+  const demo = new URLSearchParams(location.search).get("demo");
+  let visits = null, solves = null;
+  if(demo){ visits = 128; solves = 57; }
+  else{
+    try{
+      const st = statsStore(); const today = dateKey(new Date());
+      if(st.visitDate !== today){
+        visits = await countAPI("hit", "visits");
+        st.visitDate = today; setStatsStore(st);
+      } else {
+        visits = await countAPI("get", "visits");
+      }
+    }catch(e){}
+    try{ solves = await countAPI("get", "solves"); }catch(e){}
+  }
+  if(visits !== null) $("#stat-visits").textContent = visits.toLocaleString("ja-JP");
+  if(solves !== null) $("#stat-solves").textContent = solves.toLocaleString("ja-JP");
+  if(visits !== null && solves !== null && visits > 0){
+    const pct = Math.min(100, Math.round(solves/visits*100));
+    $("#stat-ratio").style.width = pct+"%";
+    $("#stat-note").textContent = "挑戦した人のうち、約"+pct+"%が「自力で解けた」と申告しています（自己申告ベース）。";
+  } else if(!demo){
+    $("#stat-note").textContent = "集計サービスに接続できませんでした。あなたの記録は通常どおり残ります。";
+  }
+}
+
 /* ---------- ホーム描画 ---------- */
 function renderHome(){
   const state = loadState();
@@ -252,6 +313,19 @@ function renderHome(){
     $("#league-bar").style.width = "100%";
     $("#league-next").textContent = "最高ティアに到達しています。今週この調子で維持しましょう。";
   }
+  const lad = $("#league-ladder"); lad.innerHTML = "";
+  TIERS.forEach((tt, i) => {
+    if(i > 0){
+      const a = document.createElement("span");
+      a.className = "arrow"; a.textContent = "→"; lad.appendChild(a);
+    }
+    const s = document.createElement("span");
+    s.className = "rung" + (tt.name === t.cur.name ? " cur" : (pts >= tt.min ? " done" : ""));
+    s.textContent = tt.name;
+    lad.appendChild(s);
+  });
+  $("#league-pos").textContent = "いまの位置：全"+TIERS.length+"段階中 "+(TIERS.indexOf(t.cur)+1)+"番目（"+t.cur.name+"）";
+  loadStats();
 
   const list = $("#prob-list"); list.innerHTML = "";
   for(const q of PROBLEMS){
@@ -353,6 +427,7 @@ function finish(solved){
       state.results[k] = { problemId: play.problem.id, solved, hints: play.hints,
         seconds: sec, practice: play.practice, score };
       saveState(state);
+      if(solved && !play.practice){ countAPI("hit", "solves").catch(() => {}); }
     }
   }
   $("#answer-area").classList.add("hidden");
