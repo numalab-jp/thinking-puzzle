@@ -21,6 +21,8 @@
   header .tag{font-size:13px; color:#D8EDE6;}
   .streak{display:inline-block; margin-top:10px; background:rgba(255,255,255,.12);
     border:1px solid var(--mint); color:#fff; border-radius:999px; padding:3px 14px; font-size:14px;}
+  .myvisitor{display:inline-block; margin-top:10px; margin-left:8px; background:rgba(255,255,255,.92);
+    color:#12312B; border-radius:999px; padding:3px 14px; font-size:14px; font-weight:700;}
   .card{background:#fff; border:1px solid #E3E0D5; border-radius:14px; padding:18px; margin-bottom:16px;
     box-shadow:0 1px 3px rgba(16,58,56,.06);}
   .card h2{font-size:17px; color:var(--deep); margin-bottom:8px;}
@@ -102,6 +104,7 @@
     <h1>思考力パズル</h1>
     <div class="tag">毎日1問。まず自分の頭で考える。ヒントは段階制、答えを見るのは最後。</div>
     <div class="streak" id="streak">🔥 0日連続</div>
+    <div class="myvisitor hidden" id="my-visitor"></div>
   </div>
 </header>
 
@@ -358,22 +361,26 @@ async function refreshDiagSocial(){
 }
 async function loadStats(){
   const demo = new URLSearchParams(location.search).get("demo");
-  let visits = null, diagN = null, startsN = null, solves = null;
-  if(demo){ visits = 128; diagN = 96; startsN = 71; solves = 57; }
+  let visits = null, diagN = null, startsN = null, solves = null, myNo = null;
+  if(demo){ visits = 128; diagN = 96; startsN = 71; solves = 57; myNo = 128; }
   else{
     try{
       const st = statsStore(); const today = dateKey(new Date());
       if(st.visitDate !== today){
         visits = await countAPI("hit", "visits");
-        st.visitDate = today; setStatsStore(st);
+        st.visitDate = today; if(typeof visits === "number") st.myNo = visits; setStatsStore(st);
+        myNo = (typeof visits === "number") ? visits : ((typeof st.myNo === "number") ? st.myNo : null);
       } else {
         visits = await countAPI("get", "visits");
+        myNo = (typeof st.myNo === "number") ? st.myNo : null;
       }
     }catch(e){}
     diagN = await getCount("diag");
     startsN = await getCount("starts");
     solves = await getCount("solves");
   }
+  const mv = $("#my-visitor");
+  if(mv && myNo !== null){ mv.textContent = "あなたは " + fmtNum(myNo) + " 人目の訪問者です"; mv.classList.remove("hidden"); }
   const showNums = (visits === null) || (visits >= STATS_SHOW_MIN);
   if(!showNums){
     $("#stat-grid").classList.add("hidden");
