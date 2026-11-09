@@ -372,7 +372,8 @@ async function loadStats(){
         myNo = (typeof visits === "number") ? visits : ((typeof st.myNo === "number") ? st.myNo : null);
       } else {
         visits = await countAPI("get", "visits");
-        myNo = (typeof st.myNo === "number") ? st.myNo : null;
+        myNo = (typeof st.myNo === "number") ? st.myNo : visits;
+        if(typeof myNo === "number" && typeof st.myNo !== "number"){ st.myNo = myNo; setStatsStore(st); }
       }
     }catch(e){}
     diagN = await getCount("diag");
