@@ -23,6 +23,8 @@
     border:1px solid var(--mint); color:#fff; border-radius:999px; padding:3px 14px; font-size:14px;}
   .myvisitor{display:inline-block; margin-top:10px; margin-left:8px; background:rgba(255,255,255,.92);
     color:#12312B; border-radius:999px; padding:3px 14px; font-size:14px; font-weight:700;}
+  .myvisitor2{display:inline-block; background:#E7F4EE; border:1px solid var(--mint);
+    color:#12312B; border-radius:999px; padding:3px 14px; font-size:14px; font-weight:700; margin-bottom:10px;}
   .card{background:#fff; border:1px solid #E3E0D5; border-radius:14px; padding:18px; margin-bottom:16px;
     box-shadow:0 1px 3px rgba(16,58,56,.06);}
   .card h2{font-size:17px; color:var(--deep); margin-bottom:8px;}
@@ -178,6 +180,7 @@
     <div class="card">
       <div class="date" id="diag-step"></div>
       <h2>30秒診断</h2>
+      <div class="myvisitor2 hidden" id="diag-my-visitor"></div>
       <div id="diag-main">
         <div class="ptitle" id="diag-q" style="font-size:19px;"></div>
         <div id="diag-opts"></div>
@@ -344,7 +347,18 @@ async function getCount(key){
   try{ return await countAPI("get", key); }catch(e){ return null; }
 }
 function fmtNum(n){ return n === null ? "—" : n.toLocaleString("ja-JP"); }
+function renderMyVisitor(n){
+  if(typeof n !== "number"){
+    const st = statsStore();
+    n = (typeof st.myNo === "number") ? st.myNo : null;
+  }
+  if(typeof n !== "number") return;
+  const t = "あなたは " + fmtNum(n) + " 人目の訪問者です";
+  const a = $("#my-visitor"); if(a){ a.textContent = t; a.classList.remove("hidden"); }
+  const b = $("#diag-my-visitor"); if(b){ b.textContent = t; b.classList.remove("hidden"); }
+}
 async function refreshDiagSocial(){
+  renderMyVisitor();
   const visits = await getCount("visits");
   const diagN = await getCount("diag");
   const startsN = await getCount("starts");
@@ -380,8 +394,7 @@ async function loadStats(){
     startsN = await getCount("starts");
     solves = await getCount("solves");
   }
-  const mv = $("#my-visitor");
-  if(mv && myNo !== null){ mv.textContent = "あなたは " + fmtNum(myNo) + " 人目の訪問者です"; mv.classList.remove("hidden"); }
+  if(myNo !== null) renderMyVisitor(myNo);
   const showNums = (visits === null) || (visits >= STATS_SHOW_MIN);
   if(!showNums){
     $("#stat-grid").classList.add("hidden");
