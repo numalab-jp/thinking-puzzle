@@ -6,7 +6,7 @@
 <title>思考力パズル｜AIに奪われた思考力を取り戻す</title>
 <meta name="description" content="AIに頼りすぎて鈍った頭を、論理パズルで鍛え直す。毎日1問、段階ヒントつき。">
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#103A38">
+<meta name="theme-color" content="#FFB03A">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -141,6 +141,43 @@
   .sharebox h4{font-size:14.5px; color:var(--deep); margin-bottom:4px;}
   .btn-x{background:#000; color:#fff;}
   .btn-img{background:#fff; color:var(--deep); border:2px solid var(--deep);}
+  /* --- 2026-11-10 明るいテーマ（参考：FMVクイズの陽気さ）＋広告枠 --- */
+  body{background:#FFF9EC;}
+  header{background:linear-gradient(120deg,#FFE29A 0%,#FFC53D 60%,#FFB03A 100%); color:var(--deep);}
+  header .series{color:#8A5A00;}
+  header .tag{color:#6B4E12;}
+  .streak{background:rgba(255,255,255,.6); border-color:#fff; color:var(--deep);}
+  .a2hs{background:var(--deep); color:#fff;}
+  .a2hs-guide{background:rgba(255,255,255,.65); border-color:#fff; color:var(--deep);}
+  .btn-main{background:linear-gradient(90deg,#FF9A3D,#F25C2A); color:#fff; box-shadow:0 3px 8px rgba(242,92,42,.35);}
+  .btn-main:active{background:linear-gradient(90deg,#F25C2A,#D9431F);}
+  .card{border-color:#F0E4C8;}
+  .card h2::before{background:#FF9A3D;}
+  .hero{background:linear-gradient(150deg,#FFF3C4 0%,#FFD93D 55%,#FFB03A 100%); color:var(--deep);}
+  .hero .date{color:#8A5A00;}
+  .hero h2{color:var(--deep);}
+  .hero h2::before{background:var(--deep);}
+  .hero .ptitle{color:var(--deep);}
+  .hero .teaser{color:#57470E;}
+  .hero .muted{color:#7A6414;}
+  .hero .score{color:var(--deep);}
+  .hero .score b{color:var(--deep);}
+  .hero .btn-main{background:linear-gradient(90deg,#FF7A3D,#F2492F); color:#fff; box-shadow:0 4px 12px rgba(242,73,47,.35);}
+  .hero .btn-main:active{background:linear-gradient(90deg,#F2492F,#D43A20);}
+  .diag-banner{background:#FFF3B0; border-color:#F0D060;}
+  .bigscore{background:linear-gradient(90deg,var(--deep),#F25C2A); -webkit-background-clip:text; background-clip:text; color:transparent;}
+  .bar > div{background:linear-gradient(90deg,#FFC53D,#F25C2A);}
+  .sharebox{background:#FFF8E1; border-color:#F0DCA8;}
+  .stat{background:#FFF3D6; border-color:#F0DCA8;}
+  .hintbox{background:#FFF8E1; border-left-color:#FFC53D;}
+  .adslot{margin-bottom:16px; background:#fff; border:1px solid #EDE6D6; border-radius:12px; padding:8px 10px 10px;}
+  .ad-label{text-align:center; font-size:11px; color:#A79B83; letter-spacing:.2em; margin-bottom:6px;}
+  .ad-house{display:block; text-decoration:none; border-radius:10px; padding:14px 16px;
+    background:linear-gradient(120deg,#103A38,#1B6A5B); color:#fff;}
+  .ad-house-t{font-weight:800; font-size:16px;}
+  .ad-house-s{font-size:13px; color:#D8EDE6; margin-top:2px;}
+  .ad-house.alt{background:linear-gradient(120deg,#FF9A3D,#F2492F);}
+  .ad-house.alt .ad-house-s{color:#FFE9DC;}
 </style>
 </head>
 <body>
@@ -170,6 +207,14 @@
         <button class="btn btn-main" id="btn-start">挑戦をはじめる</button>
       </div>
       <div class="muted" style="margin-top:10px;">本番は1日1回だけ。コピーしたり、別のタブやアプリに切り替えると、その日の挑戦は「練習扱い」になり、リーグの点数には入りません。</div>
+    </div>
+
+    <div class="adslot">
+      <div class="ad-label">- 広告 -</div>
+      <a class="ad-house" href="https://note.com/numalab/m/m8c8d71ddd20d" target="_blank" rel="noopener">
+        <div class="ad-house-t">📖 note連載『AIに奪われた思考力を取り戻す』</div>
+        <div class="ad-house-s">毎日の問題の考え方と答えを、記事でじっくり解説しています</div>
+      </a>
     </div>
 
     <div class="diag-banner">
@@ -319,6 +364,14 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <div class="adslot">
+    <div class="ad-label">- 広告 -</div>
+    <a class="ad-house alt" href="https://www.instagram.com/numalab2026/" target="_blank" rel="noopener">
+      <div class="ad-house-t">📷 Instagramでも出題中｜@numalab2026</div>
+      <div class="ad-house-s">カルーセルでサクッと解ける問題を投稿しています</div>
+    </a>
   </div>
 
   <footer>
