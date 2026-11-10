@@ -110,6 +110,37 @@
   .movelog li{padding:3px 0; border-bottom:1px dashed #E3E0D5;}
   .btn-block{display:block; width:100%; text-align:left; margin-top:10px;}
   .diag-result{font-size:24px; font-weight:800; color:var(--deep); margin:6px 0;}
+  /* --- 2026-11-10 改善：ヒーロー・シェア・見栄え --- */
+  header{background:linear-gradient(135deg,#0B2B29 0%,#103A38 55%,#175349 100%); padding:26px 16px 20px;}
+  header h1{font-size:30px; letter-spacing:.02em;}
+  .card{border-radius:16px; padding:20px; box-shadow:0 2px 10px rgba(16,58,56,.08);}
+  .card h2{position:relative; padding-left:12px;}
+  .card h2::before{content:""; position:absolute; left:0; top:3px; bottom:3px; width:4px; border-radius:2px; background:var(--mint);}
+  .btn{transition:transform .08s ease, box-shadow .15s ease;}
+  .btn:active{transform:scale(.97);}
+  .btn-main{box-shadow:0 3px 8px rgba(16,58,56,.25);}
+  .hero{background:linear-gradient(150deg,#0E3A34 0%,#14534A 70%,#1B6A5B 100%); color:#fff; border:none;}
+  .hero .date{color:var(--light);}
+  .hero h2{color:#fff;}
+  .hero h2::before{background:var(--gold);}
+  .hero .ptitle{color:#fff; font-size:29px; line-height:1.35;}
+  .hero .teaser{color:#D8EDE6; font-size:15px; white-space:pre-wrap; margin:6px 0 2px;}
+  .hero .muted{color:#B9D9CF;}
+  .hero .score{color:#fff;}
+  .hero .score b{color:var(--light);}
+  .hero .btn-main{background:var(--mint); color:#0B2B29; box-shadow:0 4px 12px rgba(0,0,0,.25); font-size:16.5px; padding:13px 26px;}
+  .hero .btn-main:active{background:var(--light);}
+  .diag-banner{display:flex; align-items:center; justify-content:space-between; gap:12px;
+    background:#fff; border:1px solid #E3E0D5; border-radius:14px; padding:12px 16px; margin-bottom:16px;
+    box-shadow:0 1px 3px rgba(16,58,56,.06);}
+  .diag-banner .t{font-weight:700; color:var(--deep); font-size:15px;}
+  .diag-banner .s{font-size:12.5px; color:var(--sub);}
+  .bigscore{background:linear-gradient(90deg,var(--deep),#1B6A5B); -webkit-background-clip:text; background-clip:text; color:transparent; animation:pop .45s ease;}
+  @keyframes pop{0%{transform:scale(.6); opacity:0;} 60%{transform:scale(1.12);} 100%{transform:scale(1); opacity:1;}}
+  .sharebox{margin-top:16px; background:#EDF6F2; border:1px solid #D5EAE2; border-radius:12px; padding:14px;}
+  .sharebox h4{font-size:14.5px; color:var(--deep); margin-bottom:4px;}
+  .btn-x{background:#000; color:#fff;}
+  .btn-img{background:#fff; color:var(--deep); border:2px solid var(--deep);}
 </style>
 </head>
 <body>
@@ -129,23 +160,24 @@
 
   <!-- ホーム -->
   <div id="view-home">
-    <div class="card" style="border:2px solid var(--mint);">
-      <h2>30秒診断：AIで頭が鈍っていないか？</h2>
-      <div class="muted">4つの質問に答えるだけの簡易チェックです（自己申告ベースの目安です）。</div>
-      <div class="row">
-        <button class="btn btn-main" id="btn-diag">診断をはじめる</button>
-      </div>
-    </div>
-
-    <div class="card">
+    <div class="card hero">
       <div class="date" id="today-date"></div>
       <h2>今日の問題</h2>
       <div class="ptitle" id="today-title"></div>
+      <div class="teaser" id="today-teaser"></div>
       <div id="today-status"></div>
       <div class="row">
         <button class="btn btn-main" id="btn-start">挑戦をはじめる</button>
       </div>
       <div class="muted" style="margin-top:10px;">本番は1日1回だけ。コピーしたり、別のタブやアプリに切り替えると、その日の挑戦は「練習扱い」になり、リーグの点数には入りません。</div>
+    </div>
+
+    <div class="diag-banner">
+      <div>
+        <div class="t">30秒診断：AIで頭が鈍っていないか？</div>
+        <div class="s">4つの質問の簡易チェック（自己申告ベースの目安です）</div>
+      </div>
+      <button class="btn btn-sub" id="btn-diag">診断する</button>
     </div>
 
     <div class="card">
@@ -272,6 +304,16 @@
       <div id="result-area" class="hidden">
         <h3>結果</h3>
         <div id="result-body"></div>
+        <div class="sharebox" id="share-box">
+          <h4>結果をシェアする</h4>
+          <div class="muted">解けた喜びも、解けなかった悔しさも、シェアすると続きます。</div>
+          <div class="row">
+            <button class="btn btn-x" id="btn-share-x">𝕏 でポスト</button>
+            <button class="btn btn-img" id="btn-share-img">結果画像を保存（インスタ用）</button>
+            <button class="btn btn-hint hidden" id="btn-share-native">シェアする</button>
+          </div>
+          <div class="muted" id="share-note" style="margin-top:6px;"></div>
+        </div>
         <div class="row">
           <button class="btn btn-main" id="btn-home">ホームへ戻る</button>
         </div>
@@ -509,6 +551,7 @@ function renderHome(){
   $("#streak").textContent = "🔥 "+streakDays(state)+"日連続";
   const p = dailyProblem();
   $("#today-title").textContent = "「"+p.title+"」";
+  $("#today-teaser").textContent = p.body.length > 130 ? p.body.slice(0, 130) + "…" : p.body;
   const r = state.results[dateKey(today)];
   const status = $("#today-status"), btn = $("#btn-start");
   if(r){
@@ -781,8 +824,83 @@ function finish(solved){
       ? ("合計"+b.elapsed+"分で全員渡れた"+(b.elapsed <= 17 ? "（条件クリア）" : "（17分オーバー）"))
       : ("合計"+b.elapsed+"分まで組み立て"))+'</div>';
   }
+  shareInfo = { title: play.problem.title, solved, hints: play.hints, seconds: sec,
+    score, isDaily: play.isDaily, practice: play.practice, scored: solved && play.isDaily && !play.practice };
+  setupShare();
   $("#result-area").classList.remove("hidden");
   window.scrollTo(0, document.body.scrollHeight);
+}
+
+/* ---------- 結果シェア（X・インスタ用画像・Web Share） ---------- */
+let shareInfo = null;
+const SITE_URL = "https://numalab-jp.github.io/thinking-puzzle/";
+function buildShareText(){
+  if(!shareInfo) return "";
+  const t = shareInfo.title, time = fmtTime(shareInfo.seconds);
+  if(shareInfo.solved){
+    let head = "思考力パズル『" + t + "』を自力で解けました🧠";
+    if(shareInfo.scored) head += " " + shareInfo.score + "点";
+    return head + "（ヒント" + shareInfo.hints + "回・" + time + "）\nAIなしで、解けますか？\n#思考力パズル #沼ラボ";
+  }
+  return "思考力パズル『" + t + "』、今日は解けませんでした🧠（ヒント" + shareInfo.hints + "回・" + time + "）\n明日リベンジします。AIなしで解ける？\n#思考力パズル #沼ラボ";
+}
+function drawShareImage(){
+  const cv = document.createElement("canvas");
+  cv.width = 1080; cv.height = 1080;
+  const c = cv.getContext("2d");
+  c.fillStyle = "#103A38"; c.fillRect(0, 0, 1080, 1080);
+  c.strokeStyle = "#78C8B4"; c.lineWidth = 6; c.strokeRect(36, 36, 1008, 1008);
+  c.textAlign = "left";
+  c.fillStyle = "#96DCC8"; c.font = "700 44px sans-serif";
+  c.fillText("思考力パズル｜沼ラボ", 90, 150);
+  c.fillStyle = "#FFFFFF";
+  c.font = "800 96px sans-serif";
+  c.fillText(shareInfo.solved ? "自力で解けた！" : "今日は解けなかった", 90, 300);
+  c.font = "700 64px sans-serif";
+  c.fillText("『" + shareInfo.title + "』", 90, 420);
+  c.font = "400 46px sans-serif";
+  c.fillStyle = "#D8EDE6";
+  let y = 540;
+  if(shareInfo.scored){ c.fillText("スコア " + shareInfo.score + "点", 90, y); y += 80; }
+  else if(shareInfo.practice || !shareInfo.isDaily){ c.fillText("練習モード／練習扱い", 90, y); y += 80; }
+  c.fillText("かかった時間 " + fmtTime(shareInfo.seconds), 90, y); y += 80;
+  c.fillText("ヒント " + shareInfo.hints + "回", 90, y); y += 120;
+  c.fillStyle = "#96DCC8"; c.font = "700 44px sans-serif";
+  c.fillText("AIなしで、解けますか？", 90, y);
+  c.fillStyle = "#FFFFFF"; c.font = "400 40px sans-serif";
+  c.fillText("numalab-jp.github.io/thinking-puzzle", 90, 960);
+  return cv;
+}
+function setupShare(){
+  if(!shareInfo) return;
+  $("#btn-share-x").onclick = () => {
+    const url = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(buildShareText()) + "&url=" + encodeURIComponent(SITE_URL);
+    window.open(url, "_blank", "noopener");
+  };
+  $("#btn-share-img").onclick = () => {
+    const a = document.createElement("a");
+    a.href = drawShareImage().toDataURL("image/png");
+    a.download = "thinking-puzzle-result.png";
+    a.click();
+    $("#share-note").textContent = "画像を保存しました。Instagramの投稿でこの画像を選べば、そのままシェアできます。文章は「𝕏 でポスト」の内容をコピーしてお使いください。";
+  };
+  const nb = $("#btn-share-native");
+  if(navigator.share){
+    nb.classList.remove("hidden");
+    nb.onclick = async () => {
+      try{
+        const blob = await new Promise(r => drawShareImage().toBlob(r, "image/png"));
+        const file = new File([blob], "thinking-puzzle-result.png", { type: "image/png" });
+        if(navigator.canShare && navigator.canShare({ files: [file] })){
+          await navigator.share({ files: [file], text: buildShareText() });
+        } else {
+          await navigator.share({ text: buildShareText(), url: SITE_URL });
+        }
+      }catch(e){}
+    };
+  } else {
+    nb.classList.add("hidden");
+  }
 }
 $("#btn-solved").addEventListener("click", () => finish(true));
 $("#btn-failed").addEventListener("click", () => finish(false));
