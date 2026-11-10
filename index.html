@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>思考力パズル｜AIに奪われた思考力を取り戻す</title>
 <meta name="description" content="AIに頼りすぎて鈍った頭を、論理パズルで鍛え直す。毎日1問、段階ヒントつき。">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#103A38">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="思考力パズル">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <style>
   :root{
     --deep:#103A38; --mint:#78C8B4; --light:#96DCC8; --paper:#F7F5EF;
@@ -23,6 +31,11 @@
     border:1px solid var(--mint); color:#fff; border-radius:999px; padding:3px 14px; font-size:14px;}
   .myvisitor{display:inline-block; margin-top:10px; margin-left:8px; background:rgba(255,255,255,.92);
     color:#12312B; border-radius:999px; padding:3px 14px; font-size:14px; font-weight:700;}
+  .a2hs{display:inline-block; margin-top:10px; margin-left:8px; background:var(--mint);
+    color:#103A38; border:none; cursor:pointer; border-radius:999px; padding:4px 14px;
+    font-size:14px; font-weight:700; font-family:inherit;}
+  .a2hs-guide{margin-top:10px; background:rgba(255,255,255,.12); border:1px solid var(--mint);
+    color:#fff; border-radius:10px; padding:8px 12px; font-size:13.5px;}
   .myvisitor2{display:inline-block; background:#E7F4EE; border:1px solid var(--mint);
     color:#12312B; border-radius:999px; padding:3px 14px; font-size:14px; font-weight:700; margin-bottom:10px;}
   .card{background:#fff; border:1px solid #E3E0D5; border-radius:14px; padding:18px; margin-bottom:16px;
@@ -107,6 +120,8 @@
     <div class="tag">毎日1問。まず自分の頭で考える。ヒントは段階制、答えを見るのは最後。</div>
     <div class="streak" id="streak">🔥 0日連続</div>
     <div class="myvisitor hidden" id="my-visitor"></div>
+    <button class="a2hs hidden" id="a2hs-btn" type="button">📱 ホームに追加</button>
+    <div class="a2hs-guide hidden" id="a2hs-guide">iPhoneの方は、ブラウザ下部の「共有」ボタンから「ホーム画面に追加」を選ぶと、アプリのようにホーム画面に置けます。</div>
   </div>
 </header>
 
@@ -780,6 +795,38 @@ $("#btn-home").addEventListener("click", () => {
 
 renderHome();
 if(new URLSearchParams(location.search).get("diag") === "1") startDiag();
+</script>
+<script>
+(function(){
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("sw.js").catch(function(){});
+  }
+  var btn = document.getElementById("a2hs-btn");
+  var guide = document.getElementById("a2hs-guide");
+  if (!btn) return;
+  var standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  if (standalone) return;
+  var deferred = null;
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  window.addEventListener("beforeinstallprompt", function(e){
+    e.preventDefault();
+    deferred = e;
+    btn.classList.remove("hidden");
+  });
+  if (isIOS) btn.classList.remove("hidden");
+  btn.addEventListener("click", function(){
+    if (deferred) {
+      deferred.prompt();
+      deferred.userChoice.then(function(){ deferred = null; btn.classList.add("hidden"); });
+    } else if (isIOS) {
+      guide.classList.toggle("hidden");
+    }
+  });
+  window.addEventListener("appinstalled", function(){
+    btn.classList.add("hidden");
+    if (guide) guide.classList.add("hidden");
+  });
+})();
 </script>
 </body>
 </html>
